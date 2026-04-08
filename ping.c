@@ -29,17 +29,22 @@ void ping_init(void)
     while ((SYSCTL_RCGCTIMER_R & 0x08) == 0) {}
    
 
-    GPIO_PORTB_DIR_R &= ~0x08; //pb3 input
-    GPIO_PORTB_DEN_R |= 0x08;
-    GPIO_PORTB_PCTL_R = (GPIO_PORTB_PCTL_R & ~0xf000) | 0x7000;
-    TIMER3_CFG_R = 0x4;
-    TIMER3_TBMR_R &= ~0x3; // clears bits
-    TIMER3_TBMR_R |= 0x7; //capture
-    TIMER3_TBMR_R &= ~0x10; //count down
-    GPIO_PORTB_AFSEL_R |= 0x8;
-    TIMER3_IMR_R |= 0x100;
-    TIMER3_CTL_R |= 0xd00;
+    GPIO_PORTB_DIR_R &= ~0x08;          // PB3 input
+    GPIO_PORTB_DEN_R |= 0x08;           // Enable digital on PB3
+    GPIO_PORTB_AFSEL_R |= 0x08;         // Enable alt function on PB3
+    GPIO_PORTB_PCTL_R &= ~0x0000F000;   // Clear PB3 nibble
+    GPIO_PORTB_PCTL_R |= 0x00007000;    // PB3 = T3CCP1
+    GPIO_PORTB_AMSEL_R &= ~0x08;        // Disable analog on PB3
 
+    TIMER3_CTL_R &= ~0x0100;            // Disable Timer3B during setup
+    TIMER3_CFG_R = 0x04;                // 16-bit timer mode
+    TIMER3_TBMR_R = 0x07;               // Capture mode, edge-time mode, count down
+    TIMER3_CTL_R |= 0x0C00;             // Capture both edges
+    TIMER3_TBILR_R = 0xFFFF;            // Lower 16 bits max
+    TIMER3_TBPR_R = 0xFF;               // Prescaler upper 8 bits max
+
+    TIMER3_ICR_R |= 0x400;              // Clear Timer3B capture flag
+    TIMER3_IMR_R |= 0x400;  
 
     IntRegister(INT_TIMER3B, TIMER3B_Handler);
 
